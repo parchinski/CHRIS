@@ -78,6 +78,13 @@ async def update_user(
     """
     update_data = user_update.model_dump(exclude_unset=True)
 
+    # Normalize team names across the board
+    if "team_name" in update_data:
+        team_val = update_data["team_name"]
+        if team_val is not None:
+            normalized = team_val.strip()
+            update_data["team_name"] = normalized.lower() if normalized else None
+
     for key, value in update_data.items():
         setattr(db_user, key, value)
 

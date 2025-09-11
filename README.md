@@ -1,5 +1,7 @@
 # CHRIS Backend
 
+[TODO](https://docs.google.com/document/d/1lzuoYi1jlENoDI385Mf6ofV7SCY9kPINsz8fD5kDQbk/edit?pli=1&tab=t.0#heading=h.ax5jd1o8uw4r)
+
 ## Installing Package Dependencies
 
 You will need uv and bun installed to test this application.

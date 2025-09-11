@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from chris.api.controllers.auth import AuthController
 from chris.database.db import get_async_session
@@ -42,22 +40,6 @@ async def update_current_user(
     db_user = current_user
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    if user_in.team_name and len(user_in.team_name) > 64:
-        raise HTTPException(
-            status_code=400, detail="Team name cannot exceed 64 characters."
-        )
-
-    # Team capacity validation
-    if user_in.team_name and user_in.team_name != db_user.team_name:
-        query = select(func.count()).where(User.team_name == user_in.team_name)
-        result = await session.execute(query)
-        team_count = result.scalar_one()
-
-        if team_count >= 4:
-            raise HTTPException(
-                status_code=418, detail=f"Team '{user_in.team_name}' is full."
-            )
 
     if user_in.availability and len(user_in.availability) < 1:
         raise HTTPException(status_code=400, detail="Availability cannot be empty")

@@ -3,10 +3,13 @@ import { toast } from "sonner";
 
 import type { ApiUser, Tab } from "@/components/staff/types";
 import { del, get, patch } from "@/services/api";
+import { adminUserUpdateSchema } from "@/schemas/adminUserUpdateSchema";
 import StaffHeader from "@/components/staff/StaffHeader";
 import SearchAndTabs from "@/components/staff/SearchAndTabs";
 const UsersTable = React.lazy(() => import("@/components/staff/UsersTable"));
-const TeamsGrid = React.lazy(() => import("@/components/staff/TeamsGrid"));
+const AdminTeamManagement = React.lazy(
+  () => import("@/components/staff/AdminTeamManagement"),
+);
 
 const Staff: React.FC = () => {
   const [users, setUsers] = useState<ApiUser[]>([]);
@@ -110,9 +113,38 @@ const Staff: React.FC = () => {
     const draft = userDrafts[userId];
     if (!draft) return;
 
+    // Validate draft client-side
+    const parsed = adminUserUpdateSchema.safeParse(draft);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      toast.error("Invalid input", {
+        description: issue?.message || "Please review the fields",
+      });
+      return;
+    }
+
+    // If team_name is provided, ensure the team exists before patching
+    const payload = parsed.data;
+    if (typeof payload.team_name === "string" && payload.team_name.length > 0) {
+      try {
+        const check = await get<{ name: string; exists: boolean }>(
+          `/teams/check/${encodeURIComponent(payload.team_name)}`,
+        );
+        if (!check.exists) {
+          toast.error("Team does not exist", {
+            description: `Cannot assign to '${payload.team_name}'.`,
+          });
+          return;
+        }
+      } catch (e: any) {
+        toast.error(e?.message || "Failed to verify team");
+        return;
+      }
+    }
+
     const p = toast.loading("Updating user…", { duration: Infinity });
     try {
-      const updated = await patch<ApiUser>(`/staff/users/${userId}`, draft);
+      const updated = await patch<ApiUser>(`/staff/users/${userId}`, payload);
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, ...updated } : u)),
       );
@@ -162,19 +194,7 @@ const Staff: React.FC = () => {
             <React.Suspense
               fallback={<div className="text-center p-8">Loading teams...</div>}
             >
-              <TeamsGrid
-                teamsGrouped={teamsGrouped}
-                teamDrafts={{}} // This needs to be adapted if inline editing is desired here too in the future
-                onTeamDraftChange={() => {}}
-                onSaveTeam={() => {}}
-                onEditingIdChange={(id) => {
-                  setEditingId(id);
-                  const user = users.find((u) => u.id === id);
-                  if (user) {
-                    // Logic for team grid editing
-                  }
-                }}
-              />
+              <AdminTeamManagement />
             </React.Suspense>
           )}
         </div>

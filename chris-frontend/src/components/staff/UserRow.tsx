@@ -148,7 +148,12 @@ const UserRow: React.FC<UserRowProps> = ({
         <EditableCell
           isEditing={isEditing}
           value={userDraft.team_name ?? user.team_name}
-          onChange={(val) => handleFieldChange("team_name", val)}
+          onChange={(val) =>
+            handleFieldChange(
+              "team_name",
+              typeof val === "string" ? val.trim().toLowerCase() : val,
+            )
+          }
           placeholder="Team name or blank"
           inputClassName="h-8 w-48 sm:w-56"
         />

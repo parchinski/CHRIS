@@ -9,7 +9,6 @@ export type ShirtSize = (typeof SHIRT_SIZES)[number];
 export const userUpdateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Invalid email address"),
-  team_name: z.string(),
   availability: z
     .array(z.enum(AVAILABILITY_OPTIONS))
     .min(1, "Select at least one day")

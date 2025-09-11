@@ -1,8 +1,11 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Column, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from chris.models.team import Team
 
 
 class User(SQLModel, table=True):
@@ -21,3 +24,6 @@ class User(SQLModel, table=True):
     dietary_restrictions: Optional[str] = Field(default=None, sa_column=Column(Text))
     notes: Optional[str] = Field(default=None, sa_column=Column(Text))
     can_take_photos: bool = Field(default=True)
+
+    # Relationship to teams created by this user
+    created_teams: list["Team"] = Relationship(back_populates="created_by")

@@ -106,18 +106,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
-
   const hasRole = useCallback(
     (role: Role) => !!user?.roles?.includes(role),
     [user],
   );
+
   const hasAnyRole = useCallback(
     (roles: Role[]) => roles.some((r) => user?.roles?.includes(r)),
     [user],
   );
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const value = useMemo<AuthContextType>(
     () => ({

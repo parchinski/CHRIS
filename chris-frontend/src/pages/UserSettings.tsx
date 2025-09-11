@@ -12,6 +12,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,18 +36,9 @@ import {
   userUpdateSchema,
 } from "@/schemas/userUpdateSchema";
 import { useAuth } from "@/contexts/AuthContext";
-import { del, patch } from "@/services/api";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { del, patch, post } from "@/services/api";
+import TeamManagement from "@/components/user/TeamManagement";
+import TeamMembers from "@/components/user/TeamMembers";
 
 const UserSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +50,6 @@ const UserSettings: React.FC = () => {
     defaultValues: {
       name: user?.name ?? "",
       email: user?.email ?? "",
-      team_name: user?.team_name ?? "",
       availability:
         (user?.availability as AvailabilityOption[] | undefined) ?? [],
       shirt_size:
@@ -59,6 +60,13 @@ const UserSettings: React.FC = () => {
       can_take_photos: user?.can_take_photos ?? true,
     },
   });
+
+  const handleTeamUpdate = async () => {
+    await checkAuthStatus();
+    toast.success("Team updated", {
+      description: "Your team information has been refreshed.",
+    });
+  };
 
   const onSubmit = async (data: UserUpdateFormValues) => {
     try {
@@ -71,6 +79,20 @@ const UserSettings: React.FC = () => {
     } catch (error) {
       console.error("Failed to update settings:", error);
       toast.error("Save failed", { description: "Please try again." });
+    }
+  };
+
+  const confirmLeaveTeam = async () => {
+    const t = toast.loading("Leaving team…", { duration: Infinity });
+    try {
+      await post("/teams/leave", {});
+      await checkAuthStatus();
+      toast.success("You have left the team", { id: t });
+    } catch (e: any) {
+      toast.error("Failed to leave team", {
+        id: t,
+        description: e?.message || "Please try again.",
+      });
     }
   };
 
@@ -133,28 +155,11 @@ const UserSettings: React.FC = () => {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="team_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-[11px] uppercase tracking-[0.18em] text-stone-400/90 font-mono">
-                  Team Request
-                </FormLabel>
-                <FormMessage className="text-xs text-stone-400">
-                  Only 4 plinkterns per team. If unsure, leave blank and staff
-                  will place you.
-                </FormMessage>
-                <FormControl>
-                  <Input
-                    className="bg-stone-900/50 hover:bg-stone-950/50 border-stone-800 text-stone-300 placeholder:text-stone-500"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-400" />
-              </FormItem>
-            )}
-          />
+          {user?.team_name ? (
+            <TeamMembers teamName={user.team_name} />
+          ) : (
+            <TeamManagement onTeamJoined={handleTeamUpdate} />
+          )}
 
           <FormField
             control={form.control}
@@ -306,7 +311,34 @@ const UserSettings: React.FC = () => {
         <p className="mt-1 text-sm text-stone-400">
           Permanently delete your account and data.
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2">
+          {user?.team_name && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="text-white border-stone-800 hover:bg-stone-950/60"
+                >
+                  Leave Team
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Leave team?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will need to be invited back or rejoin with the
+                    password.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmLeaveTeam}>
+                    Leave
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
